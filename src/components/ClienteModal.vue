@@ -1,6 +1,6 @@
 <script setup>
 import { ref, reactive, defineExpose, defineEmits } from 'vue'
-import Cliente from '../models/Cliente'
+import Cliente from '../models/cliente'
 import { createCliente, updateCliente } from '../api/clientesApi'
 
 const emit = defineEmits(['guardado'])
