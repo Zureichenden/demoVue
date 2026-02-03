@@ -19,3 +19,8 @@ export const deleteCliente = (id) => {
   return axios.delete(`${API_URL}/${id}`);
 };
 
+export const exportClientesExcel = () =>
+  axios.get(`${API_URL}/export`, {
+    responseType: 'blob'
+  })
+

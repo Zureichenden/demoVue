@@ -38,7 +38,6 @@ const emit = defineEmits(['editar', 'eliminar'])
             </span>
           </td>
 
-          <!-- ACCIONES -->
           <td>
             <div class="d-flex justify-content-end gap-2 flex-nowrap">
               <button
@@ -71,7 +70,6 @@ const emit = defineEmits(['editar', 'eliminar'])
 </template>
 
 <style scoped>
-/* Evita que los botones colapsen visualmente */
 button {
   white-space: nowrap;
 }
