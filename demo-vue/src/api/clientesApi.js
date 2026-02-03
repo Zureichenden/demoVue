@@ -10,3 +10,12 @@ export const getClientes = () => {
 export const createCliente = (cliente) => {
   return axios.post(API_URL, cliente);
 };
+
+export const updateCliente = (id, cliente) => {
+  return axios.put(`${API_URL}/${id}`, cliente);
+};
+
+export const deleteCliente = (id) => {
+  return axios.delete(`${API_URL}/${id}`);
+};
+

@@ -1,111 +1,144 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import { Modal } from 'bootstrap';
-import Cliente from '../models/Cliente';
-import { createCliente } from '../api/clientesApi';
+import { ref, reactive, defineExpose, defineEmits } from 'vue'
+import Cliente from '../models/Cliente'
+import { createCliente, updateCliente } from '../api/clientesApi'
 
-const emit = defineEmits(['guardado']);
+const emit = defineEmits(['guardado'])
 
-const modalElement = ref(null);
-let modalInstance = null;
+const visible = ref(false)
+const isEdit = ref(false)
 
-const cliente = ref(new Cliente());
-const errores = ref({});
+const form = reactive(new Cliente())
+const errors = reactive({
+  nombre: '',
+  email: '',
+  telefono: ''
+})
 
-// ==========================
-// Bootstrap Modal
-// ==========================
-onMounted(() => {
-  modalInstance = new Modal(modalElement.value);
-});
+function abrir(cliente = null) {
+  limpiarErrores()
 
-const abrir = () => {
-  cliente.value = new Cliente();
-  errores.value = {};
-  modalInstance.show();
-};
+  if (cliente) {
+    Object.assign(form, cliente)
+    isEdit.value = true
+  } else {
+    Object.assign(form, new Cliente())
+    isEdit.value = false
+  }
 
-const cerrar = () => {
-  modalInstance.hide();
-};
+  visible.value = true
+}
 
-// ==========================
-// Validación
-// ==========================
-const validar = () => {
-  errores.value = {};
+function cerrar() {
+  visible.value = false
+}
 
-  if (!cliente.value.nombre)
-    errores.value.nombre = 'Nombre obligatorio';
+function validar() {
+  limpiarErrores()
+  let valido = true
 
-  if (!/^\S+@\S+\.\S+$/.test(cliente.value.email))
-    errores.value.email = 'Email inválido';
+  if (!form.nombre || form.nombre.length < 3) {
+    errors.nombre = 'El nombre debe tener al menos 3 caracteres'
+    valido = false
+  }
 
-  if (!/^\d{7,15}$/.test(cliente.value.telefono))
-    errores.value.telefono = 'Teléfono inválido';
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(form.email)) {
+    errors.email = 'Email no válido'
+    valido = false
+  }
 
-  return Object.keys(errores.value).length === 0;
-};
+  if (form.telefono && form.telefono.length < 7) {
+    errors.telefono = 'Teléfono demasiado corto'
+    valido = false
+  }
 
-const guardar = async () => {
-  if (!validar()) return;
+  return valido
+}
 
-  await createCliente(cliente.value);
-  cerrar();
-  emit('guardado');
-};
+async function guardar() {
+  if (!validar()) return
 
-// 👇 Exponemos métodos al padre
-defineExpose({ abrir });
+  if (isEdit.value) {
+    await updateCliente(form.id, form)
+  } else {
+    await createCliente(form)
+  }
+
+  cerrar()
+  emit('guardado')
+}
+
+function limpiarErrores() {
+  errors.nombre = ''
+  errors.email = ''
+  errors.telefono = ''
+}
+
+defineExpose({ abrir })
 </script>
 
 <template>
-  <div class="modal fade" tabindex="-1" ref="modalElement">
-    <div class="modal-dialog">
-      <div class="modal-content">
+  <!-- BACKDROP -->
+  <div v-if="visible" class="modal-backdrop fade show"></div>
 
-        <div class="modal-header">
-          <h5 class="modal-title">Nuevo Cliente</h5>
-          <button type="button" class="btn-close" @click="cerrar"></button>
+  <!-- MODAL -->
+  <div
+    v-if="visible"
+    class="modal fade show d-block"
+    tabindex="-1"
+    role="dialog"
+  >
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content shadow-lg border-0">
+
+        <!-- HEADER -->
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title">
+            {{ isEdit ? 'Editar cliente' : 'Nuevo cliente' }}
+          </h5>
+          <button type="button" class="btn-close btn-close-white" @click="cerrar"></button>
         </div>
 
+        <!-- BODY -->
         <div class="modal-body">
           <div class="mb-3">
             <label class="form-label">Nombre</label>
             <input
+              v-model="form.nombre"
               class="form-control"
-              v-model="cliente.nombre"
-              :class="{ 'is-invalid': errores.nombre }"
+              :class="{ 'is-invalid': errors.nombre }"
             />
-            <div class="invalid-feedback">{{ errores.nombre }}</div>
+            <div class="invalid-feedback">{{ errors.nombre }}</div>
           </div>
 
           <div class="mb-3">
             <label class="form-label">Email</label>
             <input
+              v-model="form.email"
               class="form-control"
-              v-model="cliente.email"
-              :class="{ 'is-invalid': errores.email }"
+              :class="{ 'is-invalid': errors.email }"
             />
-            <div class="invalid-feedback">{{ errores.email }}</div>
+            <div class="invalid-feedback">{{ errors.email }}</div>
           </div>
 
           <div class="mb-3">
             <label class="form-label">Teléfono</label>
             <input
+              v-model="form.telefono"
               class="form-control"
-              v-model="cliente.telefono"
-              :class="{ 'is-invalid': errores.telefono }"
+              :class="{ 'is-invalid': errors.telefono }"
             />
-            <div class="invalid-feedback">{{ errores.telefono }}</div>
+            <div class="invalid-feedback">{{ errors.telefono }}</div>
           </div>
         </div>
 
+        <!-- FOOTER -->
         <div class="modal-footer">
           <button class="btn btn-secondary" @click="cerrar">
             Cancelar
           </button>
-          <button class="btn btn-success" @click="guardar">
+          <button class="btn btn-primary" @click="guardar">
             Guardar
           </button>
         </div>
@@ -114,3 +147,13 @@ defineExpose({ abrir });
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Asegura que el modal esté encima */
+.modal {
+  z-index: 1055;
+}
+.modal-backdrop {
+  z-index: 1050;
+}
+</style>
